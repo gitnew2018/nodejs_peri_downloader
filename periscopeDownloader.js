@@ -14,7 +14,7 @@ if (!process.argv[2]) {
 var g_m3u_url = process.argv[2],
     g_DOWNLOAD_DIR = './downloads/',
     g_fileName = process.argv[3] || 'untitled',
-    g_cookies = process.argv[4],
+    g_cookies = process.argv[4] || '',
     g_TEMP = '/temp/',
     g_live_stream = null,
     g_liveTimeout,
