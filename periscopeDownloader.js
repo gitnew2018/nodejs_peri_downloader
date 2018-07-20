@@ -186,7 +186,7 @@ function download_live() {
                 res.on('end', function () {
                     var chunkBuffer = Buffer.concat(dataParts);
 
-                    if(res.headers['content-length'] === chunkBuffer.length){
+                    if(res.headers['content-length'] == chunkBuffer.length){
                         fs.appendFile(g_DOWNLOAD_DIR + g_fileName + '.ts', chunkBuffer, { //concatenate incoming live video chunks
                             encoding: 'binary'
                         }, function (err) {
