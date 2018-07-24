@@ -30,6 +30,7 @@ var g_m3u_url = process.argv[2],
     g_retries = 70, // number of errors that can happen before downloding stops.
     g_timeToRetry = 10, //in seconds
     g_retrying = false,
+    g_beginnig = true, //skip first timeout
     vod = false;
 
 try {
@@ -69,6 +70,7 @@ function get_playlist(urlLink) {
 
             if (g_live_stream && !g_broadcastEnd && m3u_response.indexOf('#EXTM3U') !== -1) { //live running
                 m3u_response = '';
+                g_beginnig = false;
                 process_playlist(vid_chunks_list);
             } else {
                 if (m3u_response.indexOf('#EXT-X-PLAYLIST-TYPE:VOD') !== -1) { //VOD
@@ -87,8 +89,8 @@ function get_playlist(urlLink) {
                         console.log('End of broadcast');
                         process.exit();
                     } else if ((g_live_stream !== false) && !g_broadcastEnd) { // live start
-                        output_name_check(null, false, process_playlist, vid_chunks_list);
                         g_live_stream = true;
+                        output_name_check(null, false, process_playlist, vid_chunks_list);
                         setInterval(intervals, 4000);
                     }
                 } else if (res.statusCode === 301) { // //private replay redirection link 
@@ -142,11 +144,11 @@ function process_playlist(vid_chunks) {
         });
         timeout_check(120);
     }
-    console.log('Up time: ' + formatTime(Math.floor(process.uptime())));
+    !g_beginnig ? console.log('Uptime: ' + formatTime(Math.floor(process.uptime()))) : '';
 }
 
 function timeout_check(time) {
-    if (((g_chunksToDownload.length === 0) && !g_timingOut && !g_broadcastEnd) || (g_live_stream === null)) {
+    if (((g_chunksToDownload.length === 0) && !g_timingOut && !g_broadcastEnd && !g_beginnig) || (g_live_stream === null && !g_beginnig)) {
         g_timingOut = true;
 
         g_liveTimeout = setTimeout(function () {
@@ -157,7 +159,7 @@ function timeout_check(time) {
     } else if (((g_chunksToDownload.length !== 0) || (g_live_stream === null)) && g_timingOut) { // cancel timeout
         clearTimeout(g_liveTimeout);
         g_timingOut = false;
-        console.log(' ');
+        console.log('continuing download');
     }
 }
 
@@ -244,6 +246,7 @@ function mk_temp() {
 function download_vod(file_url, chunk_name, chunksToDownload) {
     var options = request_options(file_url);
     var dataParts = [];
+
     https.get(options, function (res) {
         if ((res.statusCode !== 200) && (g_retries > 0)) { //video chunk might be incomplete/empty. retry.
             g_retries -= 1;
@@ -381,6 +384,7 @@ function existing_chunks_checker() {
 
 function concat_all() {
     var i = 0;
+    console.log('Finished downloading, concatenating video parts.');
     concat_recur(i);
 
     function concat_recur(i) {
@@ -396,7 +400,7 @@ function concat_all() {
                     }
                 });
             });
-            console.log('Up time: ' + formatTime(Math.floor(process.uptime())));
+            console.log('Uptime: ' + formatTime(Math.floor(process.uptime())));
             console.log('Saved as: ' + g_fileName + '.ts');
         } else {
             fs.readFile(g_DOWNLOAD_DIR + g_TEMP + g_allChunks[i], {
