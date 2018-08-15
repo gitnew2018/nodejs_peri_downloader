@@ -144,18 +144,18 @@ function process_playlist(vid_chunks) {
         });
         timeout_check(120);
     }
-    !g_beginnig ? console.log('Uptime: ' + formatTime(Math.floor(process.uptime()))) : '';
+    console.log('Uptime: ' + formatTime(Math.floor(process.uptime())));
 }
 
 function timeout_check(time) {
-    if (((g_chunksToDownload.length === 0) && !g_timingOut && !g_broadcastEnd && !g_beginnig) || (g_live_stream === null && !g_beginnig)) {
+    if (((g_chunksToDownload.length === 0) && !g_timingOut && !g_broadcastEnd) || (g_live_stream === null && !g_beginnig)) {
         g_timingOut = true;
 
         g_liveTimeout = setTimeout(function () {
-            console.log('Timed out');
+            console.log('Time out');
             process.exit();
         }, time * 1000);
-        console.log('Timing out...');
+        console.log('No new video chunks...');
     } else if (((g_chunksToDownload.length !== 0) || (g_live_stream === null)) && g_timingOut) { // cancel timeout
         clearTimeout(g_liveTimeout);
         g_timingOut = false;
@@ -228,6 +228,9 @@ function download_live() {
                     console.log(e);
                     throw e;
                 }
+            }).setTimeout(30000, function() {
+                console.log("request timeout");
+                    this.abort();
             });
         }
     }
@@ -292,6 +295,9 @@ function download_vod(file_url, chunk_name, chunksToDownload) {
             console.log(e);
             throw e;
         }
+    }).setTimeout(30000, function() {
+        console.log("request timeout");
+            this.abort();
     });
 }
 
@@ -377,6 +383,9 @@ function existing_chunks_checker() {
             } else if (requestsCounter === numAtOnce) {
                 divide_requests();
             }
+        }).setTimeout(10000, function() {
+        console.log("request timeout");
+            this.abort();
         });
     }
 
@@ -385,9 +394,8 @@ function existing_chunks_checker() {
 function concat_all() {
     var i = 0;
     console.log('Finished downloading, concatenating video parts.');
-    concat_recur(i);
 
-    function concat_recur(i) {
+    (function concat_recur(i) {
         if (i === g_allChunks.length) { //finished concatenating
             var removedNum = 0;
             g_allChunks.forEach(function (item_to_del) { // delete all video chunks
@@ -435,7 +443,7 @@ function concat_all() {
                 }
             });
         }
-    }
+    })(i)
 }
 
 // if file wtih that name exists add +1 at the end.
